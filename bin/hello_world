@@ -2,6 +2,8 @@
 
 require 'rack'
 require 'rack/server'
+require 'rack/etag'
+require 'rack/deflater'
 
 class HelloWorld
   def response
@@ -16,4 +18,15 @@ class HelloWorldApp
   end
 end
 
-Rack::Server.start :app => HelloWorldApp
+# this returns an app that responds to call cascading down the list of
+# middlewares. Technically there is no difference between "use" and
+# "run". "run" is just there to illustrate that it's the end of the
+# chain and it does the work.
+app = Rack::Builder.new do 
+  use Rack::ETag            # Add an ETag
+  use Rack::ConditionalGet  # Support Caching
+  use Rack::Deflater        # GZip
+  run HelloWorldApp         # Say Hello
+end
+
+Rack::Server.start :app => app
